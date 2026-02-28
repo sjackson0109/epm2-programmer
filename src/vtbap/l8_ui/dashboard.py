@@ -30,8 +30,8 @@ def _make_table(frame: dict) -> Table:
 
     t.add_row("Speed",          _val(frame.get("Speed"),          "km/h"))
     t.add_row("RPM",            _val(frame.get("RPM"),            "",    ".0f"))
-    t.add_row("Gear (Actual)",  _val(frame.get("GearActual"),     "",    "d") if frame.get("GearActual") else Text("---", style="dim"))
-    t.add_row("Gear (Request)", _val(frame.get("GearCommanded"),  "",    "d") if frame.get("GearCommanded") else Text("---", style="dim"))
+    t.add_row("Gear (Actual)",  _val(frame.get("GearActual"),     "",    "d") if frame.get("GearActual") is not None else Text("---", style="dim"))
+    t.add_row("Gear (Request)", _val(frame.get("GearCommanded"),  "",    "d") if frame.get("GearCommanded") is not None else Text("---", style="dim"))
     t.add_row("Pedal",          _val(frame.get("PedalPosition"),  "%"))
     t.add_row("Engine Load",    _val(frame.get("EngineLoad"),     "%"))
     t.add_row("Drive Mode",     Text(str(frame.get("DriveMode") or "---")))
