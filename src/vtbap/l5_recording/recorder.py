@@ -11,7 +11,7 @@ import io
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -55,7 +55,7 @@ class SessionRecorder:
     def open(self) -> Path:
         """Create the CSV file and write the header."""
         self._output_dir.mkdir(parents=True, exist_ok=True)
-        self._start_time = datetime.utcnow()
+        self._start_time = datetime.now(timezone.utc)
         ts = self._start_time.strftime("%Y%m%d_%H%M%S")
         filename = f"{ts}_{self._vin}_SESSION.csv"
         self._path = self._output_dir / filename

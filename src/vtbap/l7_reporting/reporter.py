@@ -12,7 +12,7 @@ All reports embed the SHA-256 source data checksum.
 from __future__ import annotations
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -22,6 +22,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from fpdf import FPDF
+from fpdf.enums import XPos, YPos
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ class ReportGenerator:
         self._out.mkdir(parents=True, exist_ok=True)
         self._checksum = checksum
         self._vin = vin or "UNKNOWN"
-        self._ts = session_ts or datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        self._ts = session_ts or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     # ------------------------------------------------------------------
     # Graph Pack
@@ -146,44 +147,44 @@ class ReportGenerator:
         pdf.add_page()
 
         pdf.set_font("Helvetica", "B", 16)
-        pdf.cell(0, 10, "VTBAP Engineering Report", ln=True, align="C")
+        pdf.cell(0, 10, "VTBAP Engineering Report", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 6, f"Generated: {datetime.utcnow().isoformat()}Z", ln=True, align="C")
-        pdf.cell(0, 6, f"VIN: {self._vin}", ln=True, align="C")
+        pdf.cell(0, 6, f"Generated: {datetime.now(timezone.utc).isoformat()}Z", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
+        pdf.cell(0, 6, f"VIN: {self._vin}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
         pdf.ln(4)
 
         # Checksum section
         pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(0, 8, "Data Integrity", ln=True)
+        pdf.cell(0, 8, "Data Integrity", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.set_font("Courier", "", 9)
-        pdf.cell(0, 6, f"SHA-256: {self._checksum}", ln=True)
+        pdf.cell(0, 6, f"SHA-256: {self._checksum}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(4)
 
         # Session summary
         pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(0, 8, "Session Summary", ln=True)
+        pdf.cell(0, 8, "Session Summary", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 6, f"Total frames: {len(self._df)}", ln=True)
+        pdf.cell(0, 6, f"Total frames: {len(self._df)}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         if not self._df.empty and "Timestamp" in self._df.columns:
             duration = self._df["Timestamp"].max() - self._df["Timestamp"].min()
-            pdf.cell(0, 6, f"Duration: {duration:.1f} s", ln=True)
+            pdf.cell(0, 6, f"Duration: {duration:.1f} s", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(4)
 
         # RPM efficiency profile
         rpm_profile = self._analytics.get("rpm_efficiency_profile", {})
         if rpm_profile:
             pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 8, "RPM Efficiency Profile", ln=True)
+            pdf.cell(0, 8, "RPM Efficiency Profile", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             pdf.set_font("Helvetica", "", 10)
             for band, avg_rpm in rpm_profile.items():
-                pdf.cell(0, 6, f"  {band} mph band: avg RPM = {avg_rpm:.0f}", ln=True)
+                pdf.cell(0, 6, f"  {band} mph band: avg RPM = {avg_rpm:.0f}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             pdf.ln(4)
 
         # Upshift thresholds
         upshifts = self._analytics.get("upshift_thresholds", [])
         if upshifts:
             pdf.set_font("Helvetica", "B", 11)
-            pdf.cell(0, 8, f"Upshift Events ({len(upshifts)} detected)", ln=True)
+            pdf.cell(0, 8, f"Upshift Events ({len(upshifts)} detected)", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             pdf.set_font("Helvetica", "", 9)
             for ev in upshifts[:20]:  # cap at 20 lines
                 pdf.cell(
@@ -191,7 +192,7 @@ class ReportGenerator:
                     f"  Gear {ev['FromGear']}->{ev['ToGear']}  "
                     f"Speed={ev['Speed']:.1f} km/h  RPM={ev['RPM']:.0f}  "
                     f"Pedal={ev['PedalPosition']:.1f}%",
-                    ln=True,
+                    new_x=XPos.LMARGIN, new_y=YPos.NEXT,
                 )
             pdf.ln(4)
 
@@ -207,26 +208,26 @@ class ReportGenerator:
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("Helvetica", "B", 14)
-        pdf.cell(0, 10, "VTBAP Dealer Summary", ln=True, align="C")
+        pdf.cell(0, 10, "VTBAP Dealer Summary", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
         pdf.set_font("Helvetica", "", 10)
-        pdf.cell(0, 6, f"VIN: {self._vin}  |  Date: {self._ts[:8]}", ln=True, align="C")
+        pdf.cell(0, 6, f"VIN: {self._vin}  |  Date: {self._ts[:8]}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
         pdf.ln(4)
 
         pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(0, 8, "Key Findings", ln=True)
+        pdf.cell(0, 8, "Key Findings", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.set_font("Helvetica", "", 10)
 
         rpm_profile = self._analytics.get("rpm_efficiency_profile", {})
         for band, avg_rpm in rpm_profile.items():
             label = "HIGH" if avg_rpm > 3000 else "OK"
-            pdf.cell(0, 6, f"  {band} mph: avg {avg_rpm:.0f} RPM  [{label}]", ln=True)
+            pdf.cell(0, 6, f"  {band} mph: avg {avg_rpm:.0f} RPM  [{label}]", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         upshifts = self._analytics.get("upshift_thresholds", [])
-        pdf.cell(0, 6, f"  Upshift events detected: {len(upshifts)}", ln=True)
+        pdf.cell(0, 6, f"  Upshift events detected: {len(upshifts)}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         pdf.ln(4)
         pdf.set_font("Helvetica", "I", 9)
-        pdf.cell(0, 6, f"Source checksum (SHA-256): {self._checksum}", ln=True)
+        pdf.cell(0, 6, f"Source checksum (SHA-256): {self._checksum}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         path = self._out / f"{self._ts}_dealer_summary.pdf"
         pdf.output(str(path))

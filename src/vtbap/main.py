@@ -9,7 +9,7 @@ import logging
 import signal
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -117,7 +117,7 @@ def main(config: Optional[VTBAPConfig] = None) -> int:
         output_dir=cfg.output_dir,
         checksum=checksum,
         vin=cfg.vin,
-        session_ts=datetime.utcnow().strftime("%Y%m%d_%H%M%S"),
+        session_ts=datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S"),
     )
     reporter.generate_graphs()
     reporter.generate_engineering_report()
