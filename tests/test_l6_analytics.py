@@ -50,3 +50,38 @@ def test_empty_dataframe():
     engine = AnalyticsEngine(empty_df)
     assert engine.gear_utilisation_map().empty
     assert engine.upshift_thresholds() == []
+
+
+def test_gear_ratio_analysis_with_data(sample_df):
+    engine = AnalyticsEngine(sample_df)
+    result = engine.gear_ratio_analysis()
+    assert isinstance(result, dict)
+    # All 8 EAT8 gears should be represented
+    assert set(result.keys()) == {1, 2, 3, 4, 5, 6, 7, 8}
+    for gear, entry in result.items():
+        assert "nominal" in entry
+        assert "measured_mean" in entry
+        assert "deviation" in entry
+        assert "n" in entry
+        if entry["measured_mean"] is not None:
+            assert entry["n"] > 0
+            # deviation = measured - nominal
+            assert entry["deviation"] == pytest.approx(
+                entry["measured_mean"] - entry["nominal"], abs=1e-6
+            )
+
+
+def test_gear_ratio_analysis_no_data():
+    """When GearRatio column is absent, all entries should have n=0."""
+    df = pd.DataFrame({"GearActual": [1, 2, 3]})
+    engine = AnalyticsEngine(df)
+    result = engine.gear_ratio_analysis()
+    for entry in result.values():
+        assert entry["n"] == 0
+        assert entry["measured_mean"] is None
+
+
+def test_run_all_includes_gear_ratio(sample_df):
+    engine = AnalyticsEngine(sample_df)
+    result = engine.run_all()
+    assert "gear_ratio_analysis" in result

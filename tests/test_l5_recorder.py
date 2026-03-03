@@ -39,6 +39,10 @@ def test_csv_has_correct_columns():
             assert "Timestamp" in row
             assert "Speed" in row
             assert "GearActual" in row
+            assert "TransInputRPM" in row
+            assert "TransOutputRPM" in row
+            assert "GearRatio" in row
+            assert "IntakeManifoldPressure" in row
 
 
 def test_vin_anonymisation():

@@ -24,6 +24,8 @@ import pandas as pd
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 
+from vtbap.config import GEAR_RATIO_DEVIATION_THRESHOLD
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,6 +59,7 @@ class ReportGenerator:
         paths.append(self._graph_pedal_vs_torque())
         paths.append(self._graph_mode_comparison())
         paths.append(self._graph_gear_delta())
+        paths.append(self._graph_gear_ratio())
         return [p for p in paths if p is not None]
 
     def _graph_speed_vs_gear(self) -> Optional[Path]:
@@ -138,6 +141,33 @@ class ReportGenerator:
         plt.close(fig)
         return path
 
+    def _graph_gear_ratio(self) -> Optional[Path]:
+        """Bar chart: measured mean gear ratio vs EAT8 nominal per gear."""
+        gra = self._analytics.get("gear_ratio_analysis")
+        if not gra:
+            return None
+        gears_with_data = {g: v for g, v in gra.items() if v["measured_mean"] is not None}
+        if not gears_with_data:
+            return None
+        gears = sorted(gears_with_data.keys())
+        nominal  = [gra[g]["nominal"]       for g in gears]
+        measured = [gra[g]["measured_mean"] for g in gears]
+        x = np.arange(len(gears))
+        width = 0.35
+        fig, ax = plt.subplots(figsize=(10, 5))
+        ax.bar(x - width / 2, nominal,  width, label="EAT8 Nominal", color="steelblue",  alpha=0.8)
+        ax.bar(x + width / 2, measured, width, label="Measured Mean", color="tomato", alpha=0.8)
+        ax.set_xlabel("Gear")
+        ax.set_ylabel("Ratio")
+        ax.set_title("Gear Ratio: Measured vs EAT8 Nominal")
+        ax.set_xticks(x)
+        ax.set_xticklabels([str(g) for g in gears])
+        ax.legend()
+        path = self._out / f"{self._ts}_gear_ratio.png"
+        fig.savefig(path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+        return path
+
     # ------------------------------------------------------------------
     # Engineering Report (PDF)
 
@@ -194,6 +224,32 @@ class ReportGenerator:
                     f"Pedal={ev['PedalPosition']:.1f}%",
                     new_x=XPos.LMARGIN, new_y=YPos.NEXT,
                 )
+            pdf.ln(4)
+
+        # Gear ratio analysis
+        gra = self._analytics.get("gear_ratio_analysis", {})
+        if gra:
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.cell(0, 8, "Gear Ratio Analysis (vs EAT8 Nominal)", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("Helvetica", "", 9)
+            for gear in sorted(gra.keys()):
+                entry = gra[gear]
+                nominal = entry["nominal"]
+                if entry["measured_mean"] is None:
+                    pdf.cell(
+                        0, 5, f"  Gear {gear}: nominal={nominal:.3f}  (no data)",
+                        new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                    )
+                else:
+                    dev = entry["deviation"]
+                    flag = "  *** DEVIATION" if abs(dev) > GEAR_RATIO_DEVIATION_THRESHOLD else ""
+                    pdf.cell(
+                        0, 5,
+                        f"  Gear {gear}: nominal={nominal:.3f}  "
+                        f"measured={entry['measured_mean']:.3f}  "
+                        f"dev={dev:+.3f}  n={entry['n']}{flag}",
+                        new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                    )
             pdf.ln(4)
 
         path = self._out / f"{self._ts}_engineering_report.pdf"
