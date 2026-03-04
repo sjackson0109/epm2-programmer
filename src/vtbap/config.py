@@ -28,6 +28,21 @@ EVENT_MARKERS = {
 
 SPEED_BANDS_MPH = [30, 40, 50, 60, 70]
 
+# PSA/Stellantis EAT8 (Efficient Automatic Transmission 8-speed) nominal gear ratios.
+# Source: published transmission specifications for AL8/EAT8 fitted to DS7/Peugeot 508 etc.
+EAT8_GEAR_RATIOS: dict[int, float] = {
+    1: 4.714,
+    2: 3.143,
+    3: 2.106,
+    4: 1.667,
+    5: 1.285,
+    6: 1.000,
+    7: 0.839,
+    8: 0.667,
+}
+
+# Flag a gear ratio deviation in reports when it exceeds this threshold.
+GEAR_RATIO_DEVIATION_THRESHOLD = 0.05
 # PSA/Stellantis proprietary UDS Data Identifiers (DIDs).
 # WARNING: These are indicative placeholder values only.  They must be
 # verified against the actual TCU firmware revision before use on a real

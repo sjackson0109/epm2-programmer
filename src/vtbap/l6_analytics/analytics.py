@@ -15,7 +15,8 @@ from typing import Any, Optional
 import numpy as np
 import pandas as pd
 
-SPEED_BANDS_MPH = [30, 40, 50, 60, 70]
+from vtbap.config import SPEED_BANDS_MPH, EAT8_GEAR_RATIOS
+
 KMH_TO_MPH = 0.621371
 
 
@@ -123,6 +124,43 @@ class AnalyticsEngine:
         ]
         return stable.drop(columns=["PrevGearActual"])
 
+    # ------------------------------------------------------------------
+    # 8.6
+
+    def gear_ratio_analysis(self) -> dict[int, dict]:
+        """
+        Compares measured gear ratios (TransInputRPM / TransOutputRPM) against
+        EAT8 nominal values for each gear engaged.
+
+        Returns a dict keyed by gear number with:
+          - ``nominal``: published EAT8 ratio
+          - ``measured_mean``: average measured ratio (None if no data)
+          - ``deviation``: measured_mean − nominal (None if no data)
+          - ``n``: sample count
+        """
+        results: dict[int, dict] = {}
+        if "GearRatio" not in self._df.columns or "GearActual" not in self._df.columns:
+            for gear, nominal in EAT8_GEAR_RATIOS.items():
+                results[gear] = {"nominal": nominal, "measured_mean": None, "deviation": None, "n": 0}
+            return results
+
+        df = self._df.dropna(subset=["GearActual", "GearRatio"]).copy()
+        df = df[df["GearRatio"] > 0]
+
+        for gear, nominal in EAT8_GEAR_RATIOS.items():
+            subset = df[df["GearActual"] == gear]["GearRatio"]
+            if subset.empty:
+                results[gear] = {"nominal": nominal, "measured_mean": None, "deviation": None, "n": 0}
+            else:
+                mean = float(subset.mean())
+                results[gear] = {
+                    "nominal": nominal,
+                    "measured_mean": mean,
+                    "deviation": mean - nominal,
+                    "n": len(subset),
+                }
+        return results
+
     def run_all(self) -> dict[str, Any]:
         return {
             "gear_utilisation_map":     self.gear_utilisation_map(),
@@ -130,4 +168,5 @@ class AnalyticsEngine:
             "upshift_thresholds":       self.upshift_thresholds(),
             "torque_reserve":           self.torque_reserve(),
             "manual_override_stability": self.manual_override_stability(),
+            "gear_ratio_analysis":      self.gear_ratio_analysis(),
         }

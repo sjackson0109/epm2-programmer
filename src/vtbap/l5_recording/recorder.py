@@ -21,8 +21,10 @@ logger = logging.getLogger(__name__)
 
 CSV_COLUMNS = [
     "Timestamp", "Speed", "RPM", "PedalPosition", "ThrottlePosition",
-    "GearActual", "GearCommanded", "EngineLoad", "TorqueRequest",
-    "TorqueActual", "Boost", "DriveMode", "Marker",
+    "GearActual", "GearCommanded", "EngineLoad", "IntakeManifoldPressure",
+    "TorqueRequest", "TorqueActual", "EngineTorqueLimit", "Boost",
+    "TCLock", "ClutchSlip", "TransInputRPM", "TransOutputRPM", "GearRatio",
+    "DriveMode", "Marker",
 ]
 
 

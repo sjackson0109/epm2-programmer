@@ -33,23 +33,31 @@ class TelemetryFrame:
     clutch_slip: Optional[float] = None
     trans_input_rpm: Optional[float] = None
     trans_output_rpm: Optional[float] = None
+    gear_ratio: Optional[float] = None
     marker: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "Timestamp":        self.timestamp,
-            "Speed":            self.vehicle_speed,
-            "RPM":              self.engine_rpm,
-            "PedalPosition":    self.accelerator_pedal,
-            "ThrottlePosition": self.throttle_position,
-            "GearActual":       self.gear_actual,
-            "GearCommanded":    self.gear_commanded,
-            "EngineLoad":       self.engine_load,
-            "TorqueRequest":    self.driver_torque_request,
-            "TorqueActual":     self.engine_torque,
-            "Boost":            self.boost_pressure,
-            "DriveMode":        self.drive_mode,
-            "Marker":           self.marker,
+            "Timestamp":              self.timestamp,
+            "Speed":                  self.vehicle_speed,
+            "RPM":                    self.engine_rpm,
+            "PedalPosition":          self.accelerator_pedal,
+            "ThrottlePosition":       self.throttle_position,
+            "GearActual":             self.gear_actual,
+            "GearCommanded":          self.gear_commanded,
+            "EngineLoad":             self.engine_load,
+            "IntakeManifoldPressure": self.intake_manifold_press,
+            "TorqueRequest":          self.driver_torque_request,
+            "TorqueActual":           self.engine_torque,
+            "EngineTorqueLimit":      self.engine_torque_limit,
+            "Boost":                  self.boost_pressure,
+            "TCLock":                 self.tc_lock,
+            "ClutchSlip":             self.clutch_slip,
+            "TransInputRPM":          self.trans_input_rpm,
+            "TransOutputRPM":         self.trans_output_rpm,
+            "GearRatio":              self.gear_ratio,
+            "DriveMode":              self.drive_mode,
+            "Marker":                 self.marker,
         }
 
 
@@ -82,4 +90,9 @@ class SignalProcessor:
         frame.clutch_slip           = uds_data.get("clutch_slip")
         frame.trans_input_rpm       = uds_data.get("trans_input_rpm")
         frame.trans_output_rpm      = uds_data.get("trans_output_rpm")
+        # Derived: gear ratio = transmission input RPM / output RPM
+        t_in  = frame.trans_input_rpm
+        t_out = frame.trans_output_rpm
+        if t_in is not None and t_out is not None and t_out > 1e-6:
+            frame.gear_ratio = t_in / t_out
         return frame

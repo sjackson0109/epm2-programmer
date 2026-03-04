@@ -1,4 +1,5 @@
 """Tests for Signal Processing Engine."""
+import pytest
 from vtbap.l4_signal_processing.processor import SignalProcessor, TelemetryFrame
 
 
@@ -22,11 +23,29 @@ def test_merge_with_marker():
     assert frame.marker == "M3"
 
 
+def test_gear_ratio_computed():
+    proc = SignalProcessor()
+    uds = {"trans_input_rpm": 2000.0, "trans_output_rpm": 500.0}
+    frame = proc.merge({}, uds, ts=0.0)
+    assert frame.gear_ratio == pytest.approx(4.0)
+
+
+def test_gear_ratio_none_when_output_zero():
+    proc = SignalProcessor()
+    uds = {"trans_input_rpm": 1000.0, "trans_output_rpm": 0.0}
+    frame = proc.merge({}, uds, ts=0.0)
+    assert frame.gear_ratio is None
+
+
 def test_to_dict_keys():
     proc = SignalProcessor()
     frame = proc.merge({}, {}, ts=0.0)
     d = frame.to_dict()
-    expected_keys = {"Timestamp", "Speed", "RPM", "PedalPosition", "ThrottlePosition",
-                     "GearActual", "GearCommanded", "EngineLoad", "TorqueRequest",
-                     "TorqueActual", "Boost", "DriveMode", "Marker"}
+    expected_keys = {
+        "Timestamp", "Speed", "RPM", "PedalPosition", "ThrottlePosition",
+        "GearActual", "GearCommanded", "EngineLoad", "IntakeManifoldPressure",
+        "TorqueRequest", "TorqueActual", "EngineTorqueLimit", "Boost",
+        "TCLock", "ClutchSlip", "TransInputRPM", "TransOutputRPM", "GearRatio",
+        "DriveMode", "Marker",
+    }
     assert expected_keys == set(d.keys())
