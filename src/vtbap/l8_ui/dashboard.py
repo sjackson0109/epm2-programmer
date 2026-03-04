@@ -35,6 +35,7 @@ def _make_table(frame: dict) -> Table:
     t.add_row("Pedal",          _val(frame.get("PedalPosition"),  "%"))
     t.add_row("Engine Load",    _val(frame.get("EngineLoad"),     "%"))
     t.add_row("Drive Mode",     Text(str(frame.get("DriveMode") or "---")))
+    t.add_row("Keys 1-7",       Text("markers", style="dim"))
     return t
 
 
