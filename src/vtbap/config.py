@@ -1,4 +1,5 @@
 """VTBAP system configuration."""
+from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -42,6 +43,25 @@ EAT8_GEAR_RATIOS: dict[int, float] = {
 
 # Flag a gear ratio deviation in reports when it exceeds this threshold.
 GEAR_RATIO_DEVIATION_THRESHOLD = 0.05
+# PSA/Stellantis proprietary UDS Data Identifiers (DIDs).
+# WARNING: These are indicative placeholder values only.  They must be
+# verified against the actual TCU firmware revision before use on a real
+# vehicle.  Override them at runtime via VTBAPConfig.did_map or the
+# UDSReader(did_map=…) constructor argument.
+PSA_DIDS: dict[str, int] = {
+    "gear_actual":          0x1234,
+    "gear_commanded":       0x1235,
+    "tc_lock_state":        0x1236,
+    "driver_torque_req":    0x1237,
+    "engine_torque":        0x1238,
+    "boost_pressure":       0x1239,
+    "engine_torque_limit":  0x123A,
+    "drive_mode":           0x123B,
+    "clutch_slip":          0x123C,
+    "trans_input_rpm":      0x123D,
+    "trans_output_rpm":     0x123E,
+}
+
 
 @dataclass
 class VTBAPConfig:
@@ -52,3 +72,5 @@ class VTBAPConfig:
     anonymise_vin: bool = False
     reconnect_timeout_s: float = 3.0
     session_max_duration_s: float = 7200  # 2 hours
+    # Override PSA_DIDS at runtime (None = use built-in placeholders).
+    did_map: Optional[dict] = None

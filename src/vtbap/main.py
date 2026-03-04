@@ -23,6 +23,7 @@ from vtbap.l5_recording.recorder import SessionRecorder
 from vtbap.l6_analytics.analytics import AnalyticsEngine
 from vtbap.l7_reporting.reporter import ReportGenerator
 from vtbap.l8_ui.dashboard import LiveDashboard
+from vtbap.l8_ui.marker_input import MarkerInput
 
 import pandas as pd
 
@@ -56,7 +57,7 @@ def main(config: Optional[VTBAPConfig] = None) -> int:
 
     # L3: Vehicle comms
     obd2 = OBD2Reader(can)
-    uds = UDSReader(can)
+    uds = UDSReader(can, did_map=cfg.did_map)
 
     # L4: Processor
     processor = SignalProcessor()
@@ -73,10 +74,9 @@ def main(config: Optional[VTBAPConfig] = None) -> int:
     interval = 1.0 / cfg.sampling_hz
     deadline = time.monotonic() + cfg.session_max_duration_s
 
-    pending_marker: Optional[str] = None
     frames = []
 
-    with LiveDashboard(recording=True) as dash:
+    with LiveDashboard(recording=True) as dash, MarkerInput() as marker_input:
         while not _shutdown[0] and time.monotonic() < deadline:
             loop_start = time.monotonic()
 
@@ -90,8 +90,8 @@ def main(config: Optional[VTBAPConfig] = None) -> int:
             obd2_data = obd2.read_all()
             uds_data = uds.read_all()
 
+            pending_marker = marker_input.get_pending()
             frame = processor.merge(obd2_data, uds_data, ts=ts, marker=pending_marker)
-            pending_marker = None
 
             recorder.write_frame(frame)
             frames.append(frame.to_dict())

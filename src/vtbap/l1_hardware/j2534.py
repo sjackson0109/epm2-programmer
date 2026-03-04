@@ -1,8 +1,12 @@
 """
 L1 — Hardware Interface Layer: J2534 Pass-Through API abstraction.
 
-Wraps the Windows J2534 DLL via ctypes. On non-Windows platforms or when
+Wraps the Windows J2534 DLL via ctypes.  On non-Windows platforms or when
 the DLL is unavailable, the interface degrades gracefully.
+
+Platform requirement: real hardware requires Windows 10/11 and a VXDIAG
+VCX SE (or compatible) J2534 DLL.  For cross-platform use, inject a
+``SimulationInterface`` from ``vtbap.l1_hardware.protocol`` instead.
 """
 from __future__ import annotations
 import ctypes
@@ -10,6 +14,8 @@ import logging
 import platform
 import struct
 from typing import Optional
+
+from vtbap.l1_hardware.protocol import J2534Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -35,12 +41,13 @@ class PASSTHRU_MSG(ctypes.Structure):
     ]
 
 
-class J2534Interface:
+class WindowsJ2534Interface(J2534Protocol):
     """
     Thin wrapper around a J2534 v04.04 DLL.
 
-    If the DLL is unavailable (non-Windows or missing path) the interface
-    runs in *simulation mode* and all reads return None.
+    Platform requirement: requires Windows 10/11 and a compatible J2534 DLL
+    (e.g. VXDIAG VCX SE).  If the DLL is unavailable (non-Windows or missing
+    path) the interface runs in *simulation mode* and all reads return None.
     """
 
     def __init__(self, dll_path: Optional[str] = None):
@@ -140,3 +147,9 @@ class J2534Interface:
     @property
     def is_connected(self) -> bool:
         return self.simulation_mode or self._channel_id is not None
+
+
+# Backward-compatibility alias — existing code importing J2534Interface
+# continues to work without changes.
+J2534Interface = WindowsJ2534Interface
+
